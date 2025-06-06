@@ -75,6 +75,52 @@ public class Controller {
         return null;
     }
 
+    private void calendarMenu(User user) {
+    while (true) {
+        String[] options = {
+            "Crear evento",
+            "Ver mis eventos",
+            "Eliminar evento",
+            "Publicar en muro",
+            "Ver muro social",
+            "Cerrar sesión"
+        };
+        int choice = JOptionPane.showOptionDialog(
+                null,
+                "Menú de Calendario:",
+                "Usuario: " + user.getUsername(),
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+
+        if (choice == -1 || choice == 5) { // Cerrar sesión o cerrar ventana
+            // Puedes guardar datos aquí si lo necesitas
+            return;
+        }
+
+        switch (choice) {
+            case 0: // Crear evento
+                socialCalendarApp.crearEvento();
+                break;
+            case 1: // Ver mis eventos
+                socialCalendarApp.mostrarEventos();
+                break;
+            case 2: // Eliminar evento
+                socialCalendarApp.eliminarEvento();
+                break;
+            case 3: // Publicar en muro
+                socialCalendarApp.nuevaPublicacion();
+                break;
+            case 4: // Ver muro social
+                socialCalendarApp.mostrarMuro();
+                break;
+        }
+    }
+}
+
     private void adminMenu(Admin admin) {
         while (true) {
             String[] options = {"Create new user", "List users", "Remove user", "New admin", "Logout"};

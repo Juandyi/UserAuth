@@ -247,7 +247,8 @@ public class Controller {
         //balotoApp.start();
 
         // SocialCalendarApp for authenticated user
-        SocialCalendarApp calendar = new SocialCalendarApp(user);
+        SocialCalendarApp socialCalendarApp = new SocialCalendarApp(user);
+        socialCalendarApp.start();
         
 
         // Save user data here if needed after ToDoApp closes

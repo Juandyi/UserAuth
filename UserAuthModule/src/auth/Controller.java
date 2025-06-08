@@ -243,8 +243,12 @@ public class Controller {
         //todoApp.start();
         
         // Launch BalotoApp for authenticated user
-        BalotoApp balotoApp = new BalotoApp(user);
-        balotoApp.start();
+        //BalotoApp balotoApp = new BalotoApp(user);
+        //balotoApp.start();
+
+        // SocialCalendarApp for authenticated user
+        SocialCalendarApp calendar = new SocialCalendarApp(user);
+        
 
         // Save user data here if needed after ToDoApp closes
     }

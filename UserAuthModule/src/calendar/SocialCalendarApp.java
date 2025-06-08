@@ -1,154 +1,117 @@
-package calendar;
+ackage calendario;
+
+import auth.User;
 
 import javax.swing.*;
-import auth.User;
-import java.awt.*;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.io.*;
 import java.util.*;
 
-public class SocialCalendarApp {
+public class SocialCalendarApp implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private User user;
-    private Properties eventos;
-    private Properties muro;
-    private final String EVENTOS_FILE = "data\\eventos_"+user.getUsername()+".properties";
-    private final String MURO_FILE = "data\\muro_social.properties";
+    private List<String> eventos;
+    private static List<String> muro = new ArrayList<>();  // Muro común de todos los usuarios
 
     public SocialCalendarApp(User user) {
         this.user = user;
-        eventos = new Properties();
-        muro = new Properties();
+        this.eventos = loadEventos();  // cargar los eventos previos del usuario
     }
 
-    public void start() {
-        while (true) {
-            int option = JOptionPane.showOptionDialog(null,
-                    "Bienvenido " + user.getUsername() + " al Calendario Social",
-                    "Menú Principal",
-                    JOptionPane.DEFAULT_OPTION,
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    new String[]{"Nuevo Evento", "Ver Eventos", "Muro Social", "Salir"},
-                    "Nuevo Evento");
-
-            switch(option) {
-                case 0: crearEvento(); break;
-                case 1: mostrarEventos(); break;
-                case 2: gestionarMuro(); break;
-                default: return;
-            }
+    public void crearEvento() {
+        String evento = JOptionPane.showInputDialog("Describe tu evento:");
+        if (evento != null && !evento.trim().isEmpty()) {
+            eventos.add(evento.trim());
+            saveEventos();
+            JOptionPane.showMessageDialog(null, "Evento agregado.");
         }
     }
 
-    private void crearEvento() {
-        JPanel panel = new JPanel(new GridLayout(4, 2));
-        JTextField titulo = new JTextField();
-        JTextField fecha = new JTextField(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
-        JTextField hora = new JTextField(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")));
-        JTextArea descripcion = new JTextArea(3,20);
-        
-        panel.add(new JLabel("Título:"));
-        panel.add(titulo);
-        panel.add(new JLabel("Fecha (YYYY-MM-DD):"));
-        panel.add(fecha);
-        panel.add(new JLabel("Hora (HH:mm):"));
-        panel.add(hora);
-        panel.add(new JLabel("Descripción:"));
-        panel.add(new JScrollPane(descripcion));
-
-        int result = JOptionPane.showConfirmDialog(null, panel, "Nuevo Evento", 
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-        if (result == JOptionPane.OK_OPTION) {
-            guardarEvento(titulo.getText(), fecha.getText(), hora.getText(), descripcion.getText());
+    public void mostrarEventos() {
+        if (eventos.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No tienes eventos.");
+        } else {
+            JOptionPane.showMessageDialog(null, String.join("\n", eventos));
         }
     }
 
-    private void guardarEvento(String titulo, String fecha, String hora, String descripcion) {
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        String value = String.format("titulo=%s|fecha=%s|hora=%s|desc=%s", 
-                titulo, fecha, hora, descripcion);
-        
-        eventos.setProperty(timestamp, value);
-        
-        try(FileOutputStream out = new FileOutputStream(EVENTOS_FILE)) {
-            eventos.store(out, "Eventos de " + user.getUsername());
-            JOptionPane.showMessageDialog(null, "Evento guardado!");
-        } catch(IOException e) {
-            JOptionPane.showMessageDialog(null, "Error guardando evento: " + e.getMessage());
+    public void eliminarEvento() {
+        if (eventos.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No hay eventos para eliminar.");
+            return;
+        }
+
+        String[] opciones = eventos.toArray(new String[0]);
+        String seleccion = (String) JOptionPane.showInputDialog(null, "Selecciona el evento a eliminar:",
+                "Eliminar Evento", JOptionPane.PLAIN_MESSAGE, null, opciones, opciones[0]);
+
+        if (seleccion != null) {
+            eventos.remove(seleccion);
+            saveEventos();
+            JOptionPane.showMessageDialog(null, "Evento eliminado.");
         }
     }
 
-    private void mostrarEventos() {
-        StringBuilder sb = new StringBuilder("<html><div style='font-size:14pt; margin:10px;'>");
-        sb.append("<h2>Tus Eventos</h2>");
-        
-        eventos.stringPropertyNames().stream()
-            .sorted(Collections.reverseOrder())
-            .forEach(k -> {
-                String[] parts = eventos.getProperty(k).split("\\|");
-                sb.append(String.format("<p><b>%s</b><br>%s %s<br>%s</p>", 
-                    getValue(parts[0]), getValue(parts[1]), getValue(parts[2]), getValue(parts[3])));
-            });
-        
-        sb.append("</div></html>");
-        
-        JLabel content = new JLabel(sb.toString());
-        JOptionPane.showMessageDialog(null, new JScrollPane(content), "Tus Eventos", JOptionPane.PLAIN_MESSAGE);
-    }
-
-    private void gestionarMuro() {
-        int option = JOptionPane.showOptionDialog(null, 
-                "Muro Social - Publica y ve los eventos compartidos",
-                "Muro Social",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                new String[]{"Nueva Publicación", "Ver Muro", "Volver"},
-                "Nueva Publicación");
-        
-        if(option == 0) nuevaPublicacion();
-        else if(option == 1) mostrarMuro();
-    }
-
-    private void nuevaPublicacion() {
-        String mensaje = JOptionPane.showInputDialog("Escribe tu publicación para el muro:");
-        if(mensaje != null && !mensaje.trim().isEmpty()) {
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-            String entry = String.format("%s|%s", user.getUsername(), mensaje);
-            muro.setProperty(timestamp, entry);
-            
-            try(FileOutputStream out = new FileOutputStream(MURO_FILE, true)) {
-                muro.store(out, "Publicaciones del muro social");
-            } catch(IOException e) {
-                JOptionPane.showMessageDialog(null, "Error publicando: " + e.getMessage());
-            }
+    public void nuevaPublicacion() {
+        String mensaje = JOptionPane.showInputDialog("¿Qué deseas publicar en el muro?");
+        if (mensaje != null && !mensaje.trim().isEmpty()) {
+            muro.add(user.getUsername() + ": " + mensaje.trim());
+            saveMuro();
+            JOptionPane.showMessageDialog(null, "Publicado en el muro.");
         }
     }
 
-    private void mostrarMuro() {
-        StringBuilder sb = new StringBuilder("<html><div style='font-size:12pt; margin:10px;'>");
-        sb.append("<h2>Últimas Publicaciones</h2>");
-        
-        muro.stringPropertyNames().stream()
-            .sorted(Collections.reverseOrder())
-            .limit(20)
-            .forEach(k -> {
-                String[] parts = muro.getProperty(k).split("\\|");
-                sb.append(String.format("<p><b>%s</b> <i>(%s)</i><br>%s</p>", 
-                    parts[0], k, parts[1]));
-            });
-        
-        sb.append("</div></html>");
-        
-        JLabel content = new JLabel(sb.toString());
-        JOptionPane.showMessageDialog(null, new JScrollPane(content), "Muro Social", JOptionPane.PLAIN_MESSAGE);
+    public void mostrarMuro() {
+        if (muro.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "El muro está vacío.");
+        } else {
+            JOptionPane.showMessageDialog(null, String.join("\n", muro));
+        }
     }
 
-    private String getValue(String keyValue) {
-        return keyValue.contains("=") ? keyValue.split("=", 2)[1] : "";
+    // Archivos de persistencia
+    private String getEventoFile() {
+        return "data\\eventos_" + user.getUsername() + ".ser";
+    }
+
+    private void saveEventos() {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(getEventoFile()))) {
+            out.writeObject(eventos);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(null, "Error guardando eventos: " + e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> loadEventos() {
+        File file = new File(getEventoFile());
+        if (!file.exists()) return new ArrayList<>();
+
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
+            return (List<String>) in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            JOptionPane.showMessageDialog(null, "Error cargando eventos: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    private static void saveMuro() {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("data\\muro.ser"))) {
+            out.writeObject(muro);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(null, "Error guardando muro: " + e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void loadMuro() {
+        File file = new File("data\\muro.ser");
+        if (!file.exists()) return;
+
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
+            muro = (List<String>) in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            JOptionPane.showMessageDialog(null, "Error cargando muro: " + e.getMessage());
+        }
     }
 }
-

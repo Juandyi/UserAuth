@@ -2,7 +2,7 @@ package auth;
 
 import javax.swing.*;
 
-import baloto.BalotoApp;
+import calendar.SocialCalendarApp;
 import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
@@ -11,6 +11,7 @@ import java.util.List;
 public class Controller {
     private List<User> users = new ArrayList<>();
     private List<Admin> admins = new ArrayList<>();
+    private SocialCalendarApp socialCalendarApp;
 
     private static final String DATA_FILE = "data\\userdata.ser";
 
@@ -249,8 +250,8 @@ public class Controller {
         //balotoApp.start();
 
         // SocialCalendarApp for authenticated user
-        SocialCalendarApp socialCalendarApp = new SocialCalendarApp(user);
-        socialCalendarApp.start();
+        socialCalendarApp = new SocialCalendarApp(user);
+        calendarMenu(user);
         
 
         // Save user data here if needed after ToDoApp closes

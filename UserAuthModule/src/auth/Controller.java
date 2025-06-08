@@ -23,6 +23,7 @@ public class Controller {
     }
 
     public void start() {
+        SocialCalendarApp.loadMuro();
         while (true) {
             String[] options = {"Admin", "User", "Exit"};
             int choice = JOptionPane.showOptionDialog(null,
@@ -48,7 +49,6 @@ public class Controller {
                     break;
             }
         }
-    SocialCalendarApp.loadMuro();
     }
 
     private void adminLoginFlow() {

@@ -47,6 +47,7 @@ public class Controller {
                     break;
             }
         }
+    SocialCalendarApp.loadMuro();
     }
 
     private void adminLoginFlow() {
@@ -76,6 +77,7 @@ public class Controller {
     }
 
     private void calendarMenu(User user) {
+    SocialCalendarApp socialCalendarApp = new SocialCalendarApp(user);
     while (true) {
         String[] options = {
             "Crear evento",

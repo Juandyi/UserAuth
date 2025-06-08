@@ -18,6 +18,41 @@ public class SocialCalendarApp implements Serializable {
         this.eventos = loadEventos();  // cargar los eventos previos del usuario
     }
 
+    public void start() {
+    while (true) {
+        String[] options = {
+            "Crear evento",
+            "Ver mis eventos",
+            "Eliminar evento",
+            "Publicar en muro",
+            "Ver muro social",
+            "Salir"
+        };
+
+        int choice = JOptionPane.showOptionDialog(
+            null,
+            "Menú de Calendario Social",
+            "Usuario: " + user.getUsername(),
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.PLAIN_MESSAGE,
+            null,
+            options,
+            options[0]
+        );
+
+        if (choice == -1 || choice == 5) break;
+
+        switch (choice) {
+            case 0 -> crearEvento();
+            case 1 -> mostrarEventos();
+            case 2 -> eliminarEvento();
+            case 3 -> nuevaPublicacion();
+            case 4 -> mostrarMuro();
+        }
+    }
+}
+
+
     public void crearEvento() {
         String evento = JOptionPane.showInputDialog("Describe tu evento:");
         if (evento != null && !evento.trim().isEmpty()) {

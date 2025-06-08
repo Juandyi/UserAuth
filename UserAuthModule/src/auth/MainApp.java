@@ -36,5 +36,5 @@ public class MainApp {
 	public static void testSocialCalendarApp(){
 		User testUser = new User("testuser", "testpass");
 		socialCalendarApp = new SocialCalendarApp(testUser);
-		socialCalendarApp.start();
+		calendarApp.start();
 }

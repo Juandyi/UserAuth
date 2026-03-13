@@ -1,0 +1,240 @@
+```mermaid
+classDiagram
+    %% ======= DOMINIO PRINCIPAL =======
+    class Refugio {
+        -id: String
+        -nombre: String
+        -ubicacion: String
+        -fotos: List~String~
+        -mascotas: List~Mascota~
+        -veterinarios: List~Veterinario~
+        +registrarMascota(m: Mascota)
+        +gestionarSolicitud(s: SolicitudAdopcion)
+        +generarReporte(): Reporte
+        +agregarEvento(e: EventoRefugio)
+    }
+    
+    class Mascota {
+        -id: String
+        -nombre: String
+        -especie: String
+        -raza: String
+        -edad: int
+        -sexo: String
+        -tamano: String
+        -descripcion: String
+        -estado: EstadoMascota
+        -carnetVacunacion: CarnetVacunacion
+        -eventos: List~EventoMedico~
+        +actualizarPerfil()
+        +agregarEventoMedico(e: EventoMedico)
+    }
+    
+    class CarnetVacunacion {
+        -vacunas: List~Vacuna~
+        -desparasitaciones: List~Desparasitacion~
+        -tratamientos: List~Tratamiento~
+        +programarProximaVacunacion()
+    }
+    
+    class Vacuna {
+        -nombre: String
+        -fechaAplicacion: Date
+        -proximaFecha: Date
+    }
+    
+    class EventoMedico {
+        -descripcion: String
+        -fecha: Date
+        -tipo: String
+    }
+    
+    class Veterinario {
+        -id: String
+        -nombre: String
+        -especialidades: List~String~
+        -disponibilidad: Horario
+        +asignarSeguimiento(a: Adopcion)
+        +registrarRevision(a: Adopcion, nota: String)
+        +actualizarCarnet(m: Mascota)
+    }
+    
+    class Adoptante {
+        -id: String
+        -nombre: String
+        -contacto: String
+        -domicilio: String
+        -tipoVivienda: String
+        -tieneNinos: boolean
+        -otrasMascotas: boolean
+        +solicitarPrueba(m: Mascota)
+        +actualizarInfoMascota(m: Mascota, evento: EventoMedico)
+        +buscarMascotas(filtros: FiltrosBusqueda)
+    }
+    
+    class SolicitudAdopcion {
+        -id: String
+        -fechaSolicitud: Date
+        -estado: EstadoSolicitud
+        +aprobar()
+        +rechazar()
+        +iniciarPruebaConvivencia()
+    }
+    
+    class PruebaConvivencia {
+        -id: String
+        -fechaInicio: Date
+        -fechaFin: Date
+        -estado: EstadoPrueba
+        +completar(decision: boolean)
+        +devolverMascota(motivo: String)
+    }
+    
+    class Adopcion {
+        -id: String
+        -fechaAdopcion: Date
+        -veterinarioAsignado: Veterinario
+        -estado: EstadoAdopcion
+        +finalizar()
+        +registrarDevolucion(motivo: String)
+    }
+    
+    %% Enumeraciones
+    class EstadoMascota {
+        <<enumeration>>
+        DISPONIBLE
+        EN_PRUEBA
+        ADOPTADA
+        DEVUELTA
+    }
+    
+    class EstadoAdopcion {
+        <<enumeration>>
+        PENDIENTE
+        APROBADA
+        FINALIZADA
+        CANCELADA
+    }
+    
+    class EstadoPrueba {
+        <<enumeration>>
+        ACTIVA
+        COMPLETADA
+        FALLIDA
+    }
+    
+    %% Relaciones DOMINIO
+    Refugio "1" o-- "*" Mascota : gestiona
+    Refugio "1" o-- "*" Veterinario : tiene
+    Mascota "1" *-- "1" CarnetVacunacion : posee
+    Mascota "1" o-- "*" EventoMedico : registra
+    Adoptante "1" --> "*" SolicitudAdopcion : realiza
+    SolicitudAdopcion "1" --> "1" Mascota : para
+    SolicitudAdopcion "1" --> "1" Adopcion : genera
+    Adopcion "1" --> "1" Veterinario : asignado
+    Adopcion "1" --> "1" PruebaConvivencia : incluye
+    Adoptante "1" --> "*" PruebaConvivencia : participa
+    Mascota "1" --> "*" PruebaConvivencia : en
+    
+    %% ======= PATRONES ESTRUCTURALES (4) =======
+    %% 1. FACADE
+    class SistemaAdopcionFacade {
+        -refugioService: RefugioService
+        -adopcionService: AdopcionService
+        -notificacionService: NotificacionService
+        -calendarioService: CalendarioService
+        +buscarMascotas(filtros: FiltrosBusqueda): List~Mascota~
+        +procesarSolicitudAdopcion(s: SolicitudAdopcion)
+        +iniciarPruebaConvivencia(m: Mascota, a: Adoptante)
+        +finalizarAdopcion(a: Adopcion)
+        +gestionarDevolucion(a: Adopcion)
+    }
+    Refugio --> SistemaAdopcionFacade : utiliza
+    SistemaAdopcionFacade ..> SolicitudAdopcion : gestiona
+    SistemaAdopcionFacade ..> Adopcion : procesa
+    
+    %% 2. DECORATOR (Notificaciones)
+    class Notificacion {
+        <<interface>>
+        +enviar(mensaje: String)
+    }
+    class NotificacionBasica {
+        +enviar(mensaje: String)
+    }
+    class DecoradorNotificacion {
+        -notificacion: Notificacion
+        +enviar(mensaje: String)
+    }
+    class NotificacionEmail {
+        +enviar(mensaje: String)
+    }
+    class NotificacionSMS {
+        +enviar(mensaje: String)
+    }
+    Notificacion <|.. NotificacionBasica
+    Notificacion <|.. DecoradorNotificacion
+    DecoradorNotificacion *-- Notificacion : envuelve
+    DecoradorNotificacion <|-- NotificacionEmail
+    DecoradorNotificacion <|-- NotificacionSMS
+    SistemaAdopcionFacade --> Notificacion : utiliza
+    
+    %% 3. ADAPTER (Calendario externo)
+    class CalendarioSistema {
+        <<interface>>
+        +crearEvento(e: EventoRefugio)
+        +obtenerEventos(): List~EventoRefugio~
+    }
+    class AdaptadorGoogleCalendar {
+        -apiGoogle: GoogleCalendarAPI
+        +crearEvento(e: EventoRefugio)
+        +obtenerEventos(): List~EventoRefugio~
+    }
+    class GoogleCalendarAPI {
+        <<external>>
+        +insertEvent(data)
+        +getEvents()
+    }
+    class EventoRefugio {
+        -titulo: String
+        -fecha: Date
+        -descripcion: String
+    }
+    CalendarioSistema <|.. AdaptadorGoogleCalendar
+    AdaptadorGoogleCalendar --> GoogleCalendarAPI : adapta
+    Refugio --> CalendarioSistema : integra
+    CalendarioSistema ..> EventoRefugio : maneja
+    
+    %% 4. PROXY (Acceso seguro a perfiles)
+    class ProxyPerfilMascota {
+        -perfilReal: PerfilMascota
+        -usuario: Usuario
+        +obtenerPerfil(): PerfilMascota
+        +actualizarPerfil(datos)
+    }
+    class PerfilMascota {
+        -fotos: List~String~
+        -historial: List~EventoMedico~
+        +getDatosSensibles()
+    }
+    ProxyPerfilMascota *-- PerfilMascota : protege
+    Mascota --> ProxyPerfilMascota : accede via
+    
+    %% ======= PATRONES CREACIONALES (3) =======
+    note for Refugio "Singleton: única instancia por ubicación"
+    note for Mascota "Factory Method: crear por especie (PerroFactory, GatoFactory)"
+    note for Adopcion "Builder: construir adopción compleja paso a paso"
+
+    %% Clase adicional para Factory ejemplo
+    class MascotaFactory {
+        <<abstract>>
+        +crearMascota(tipo: String): Mascota
+    }
+    class PerroFactory {
+        +crearMascota(): Mascota
+    }
+    class GatoFactory {
+        +crearMascota(): Mascota
+    }
+    MascotaFactory <|-- PerroFactory
+    MascotaFactory <|-- GatoFactory
+    Refugio --> MascotaFactory : utiliza
